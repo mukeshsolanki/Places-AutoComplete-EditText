@@ -22,7 +22,7 @@ import java.net.URLEncoder
 /**
  * Created by mukeshsolanki on 28/02/19.
  */
-class PlaceAPI {
+class PlaceAPI private constructor(var apiKey: String?, var sessionToken: String?, var appContext: Context) {
   /**
    * Used to get details for the places api to be showed in the auto complete list
    */
@@ -101,10 +101,10 @@ class PlaceAPI {
   /**
    * Used to initialize the autocomplete api with the api key
    */
-  fun initialize(key: String, context: Context) {
-    apiKey = key
-    appContext = context
-  }
+//  fun initialize(key: String, context: Context) {
+//    apiKey = key
+//    appContext = context
+//  }
 
   /**
    * Fetches the details of the place
@@ -198,7 +198,14 @@ class PlaceAPI {
     private const val ADDRESS_COMPONENTS = "address_components"
     private const val RESULT = "result"
     private const val ERROR_MESSAGE = "error_message"
-    private var apiKey = ""
-    private var appContext: Context? = null
+  }
+
+  data class Builder(
+    private var apiKey: String? = null,
+    private var sessionToken: String? = null) {
+
+    fun apiKey(apiKey: String) = apply { this.apiKey = apiKey }
+    fun sessionToken(sessionToken: String) = apply { this.sessionToken = sessionToken }
+    fun build(context: Context) = PlaceAPI(apiKey, sessionToken, context)
   }
 }

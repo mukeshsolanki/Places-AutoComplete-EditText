@@ -9,31 +9,21 @@ import android.os.Bundle
 import android.widget.AdapterView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.android.synthetic.main.activity_main.autoCompleteEditText
-import kotlinx.android.synthetic.main.activity_main.cityTextView
-import kotlinx.android.synthetic.main.activity_main.countryTextView
-import kotlinx.android.synthetic.main.activity_main.stateTextView
-import kotlinx.android.synthetic.main.activity_main.streetTextView
-import kotlinx.android.synthetic.main.activity_main.zipCodeTextView
+import kotlinx.android.synthetic.main.activity_main.*
 
 /**
  * The main activity show cases an example of how to use the places auto complete api
  */
 class MainActivity : AppCompatActivity() {
 
-  val placesApi = PlaceAPI()
+  val placesApi = PlaceAPI.Builder()
+    .apiKey("YOUR_API_KEY")
+    .build(this@MainActivity)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
-//    placesApi.initialize(getString(R.string.mapsApiKey))
-    placesApi.initialize("YOUR_API_KEY", this@MainActivity)
-    autoCompleteEditText.setAdapter(
-      PlacesAutoCompleteAdapter(
-        this,
-        placesApi
-      )
-    )
+    autoCompleteEditText.setAdapter(PlacesAutoCompleteAdapter(this, placesApi))
     autoCompleteEditText.onItemClickListener =
       AdapterView.OnItemClickListener { parent, _, position, _ ->
         val place = parent.getItemAtPosition(position) as Place
