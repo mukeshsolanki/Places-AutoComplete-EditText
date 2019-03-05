@@ -23,7 +23,9 @@ import java.net.URLEncoder
  * Created by mukeshsolanki on 28/02/19.
  */
 class PlaceAPI {
-
+  /**
+   * Used to get details for the places api to be showed in the auto complete list
+   */
   internal fun autocomplete(input: String): ArrayList<Place>? {
     checkInitialization()
     val resultList: ArrayList<Place>? = null
@@ -96,6 +98,9 @@ class PlaceAPI {
     } while (true)
   }
 
+  /**
+   * Used to initialize the autocomplete api with the api key
+   */
   fun initialize(key: String, context: Context) {
     apiKey = key
     appContext = context
@@ -136,7 +141,7 @@ class PlaceAPI {
     appContext?.getString(resource)?.let { listener.onError(it) }
   }
 
-  private fun parseDetailsError(jsonResults: StringBuilder, listener: OnPlacesDetailsListener, e: JSONException) {
+  private fun parseDetailsError(jsonResults: StringBuilder, listener: OnPlacesDetailsListener, e: Exception) {
     val errorJson = JSONObject(jsonResults.toString())
     if (errorJson.has(ERROR_MESSAGE)) {
       Log.e(TAG, errorJson.getString(ERROR_MESSAGE), e)
