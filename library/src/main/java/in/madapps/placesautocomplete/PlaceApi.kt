@@ -199,12 +199,26 @@ class PlaceAPI private constructor(var apiKey: String?, var sessionToken: String
     private const val ERROR_MESSAGE = "error_message"
   }
 
+  /**
+   * The data class used as builder to allow the user to use different configs of the places API
+   */
   data class Builder(
     private var apiKey: String? = null,
     private var sessionToken: String? = null
   ) {
+    /**
+     * Sets the api key for the PlaceAPI
+     */
     fun apiKey(apiKey: String) = apply { this.apiKey = apiKey }
+
+    /**
+     * Sets a unique session token for billing in the PlaceAPI
+     */
     fun sessionToken(sessionToken: String) = apply { this.sessionToken = sessionToken }
+
+    /**
+     * Builds and creates an object of the PlaceAPI
+     */
     fun build(context: Context) = PlaceAPI(apiKey, sessionToken, context)
   }
 }
