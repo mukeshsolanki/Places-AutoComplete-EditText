@@ -24,7 +24,7 @@ import java.net.URLEncoder
  */
 class PlaceAPI {
 
-  fun autocomplete(input: String): ArrayList<Place>? {
+  internal fun autocomplete(input: String): ArrayList<Place>? {
     checkInitialization()
     val resultList: ArrayList<Place>? = null
     var conn: HttpURLConnection? = null
@@ -76,19 +76,15 @@ class PlaceAPI {
       return resultList
     } catch (e: JSONException) {
       val errorJson = JSONObject(jsonResults.toString())
-      if (errorJson.has("error_message")) {
-        Log.e(TAG, errorJson.getString("error_message"))
-      } else {
-        Log.e(TAG, appContext?.getString(R.string.error_cannot_process_json_results), e)
+      when {
+        errorJson.has(ERROR_MESSAGE) -> Log.e(TAG, errorJson.getString(ERROR_MESSAGE))
+        else -> Log.e(TAG, appContext?.getString(R.string.error_cannot_process_json_results), e)
       }
       return resultList
     }
   }
 
-  private fun constructData(
-    inputStreamReader: InputStreamReader,
-    jsonResults: StringBuilder
-  ) {
+  private fun constructData(inputStreamReader: InputStreamReader, jsonResults: StringBuilder) {
     var read: Int
     val buff = CharArray(1024)
     loop@ do {
@@ -126,11 +122,7 @@ class PlaceAPI {
       } catch (e: Exception) {
         when (e) {
           is JSONException -> parseDetailsError(jsonResults, listener, e)
-          is MalformedURLException -> showDetailsError(
-            R.string.error_processing_places_api,
-            listener,
-            e
-          )
+          is MalformedURLException -> showDetailsError(R.string.error_processing_places_api, listener, e)
           is IOException -> showDetailsError(R.string.error_connecting_to_places_api, listener, e)
         }
       } finally {
@@ -139,28 +131,19 @@ class PlaceAPI {
     }).start()
   }
 
-  private fun showDetailsError(
-    resource: Int,
-    listener: OnPlacesDetailsListener,
-    e: Exception
-  ) {
+  private fun showDetailsError(resource: Int, listener: OnPlacesDetailsListener, e: Exception) {
     logError(e, resource)
     appContext?.getString(resource)?.let { listener.onError(it) }
   }
 
-  private fun parseDetailsError(
-    jsonResults: StringBuilder,
-    listener: OnPlacesDetailsListener,
-    e: JSONException
-  ) {
+  private fun parseDetailsError(jsonResults: StringBuilder, listener: OnPlacesDetailsListener, e: JSONException) {
     val errorJson = JSONObject(jsonResults.toString())
     if (errorJson.has(ERROR_MESSAGE)) {
       Log.e(TAG, errorJson.getString(ERROR_MESSAGE), e)
       listener.onError(errorJson.getString(ERROR_MESSAGE))
     } else {
       Log.e(TAG, appContext?.getString(R.string.error_cannot_process_json_results), e)
-      appContext?.getString(R.string.error_cannot_process_json_results)
-        ?.let { listener.onError(it) }
+      appContext?.getString(R.string.error_cannot_process_json_results)?.let { listener.onError(it) }
     }
   }
 
@@ -184,15 +167,8 @@ class PlaceAPI {
     )
   }
 
-  private fun parseAddressType(
-    addressTypeArray: JSONArray,
-    addressType: ArrayList<String>,
-    address: ArrayList<Address>,
-    addressObject: JSONObject
-  ) {
-    (0 until addressTypeArray.length()).forEach { j ->
-      addressType.add(addressTypeArray.getString(j))
-    }
+  private fun parseAddressType(addressTypeArray: JSONArray, addressType: ArrayList<String>, address: ArrayList<Address>, addressObject: JSONObject) {
+    (0 until addressTypeArray.length()).forEach { j -> addressType.add(addressTypeArray.getString(j)) }
     address.add(
       Address(
         addressObject.getString(LONG_NAME),
