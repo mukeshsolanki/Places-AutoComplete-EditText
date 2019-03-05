@@ -81,10 +81,7 @@ class PlacesAutoCompleteAdapter(mContext: Context, val placesApi: PlaceAPI) :
         val filterResults = FilterResults()
         if (constraint != null) {
           resultList = placesApi.autocomplete(constraint.toString())
-
-
           resultList?.add(Place("-1", "footer"))
-
           filterResults.values = resultList
           filterResults.count = resultList!!.size
         }

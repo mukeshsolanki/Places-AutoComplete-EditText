@@ -1,5 +1,6 @@
 package `in`.madapps.placesautocomplete
 
+import `in`.madapps.placesautocomplete.exception.InitializationException
 import `in`.madapps.placesautocomplete.listener.OnPlacesDetailsListener
 import `in`.madapps.placesautocomplete.model.Address
 import `in`.madapps.placesautocomplete.model.Place
@@ -21,16 +22,17 @@ import java.net.URLEncoder
 /**
  * Created by mukeshsolanki on 28/02/19.
  */
-class PlaceAPI {
-
-  fun autocomplete(input: String): ArrayList<Place>? {
+class PlaceAPI private constructor(var apiKey: String?, var sessionToken: String?, var appContext: Context) {
+  /**
+   * Used to get details for the places api to be showed in the auto complete list
+   */
+  internal fun autocomplete(input: String): ArrayList<Place>? {
     checkInitialization()
     val resultList: ArrayList<Place>? = null
     var conn: HttpURLConnection? = null
     val jsonResults = StringBuilder()
     try {
-      val sb = StringBuilder(PLACES_API_BASE + TYPE_AUTOCOMPLETE + OUT_JSON)
-      sb.append("?key=$apiKey")
+      val sb = buildApiUrl(PLACES_API_BASE + TYPE_AUTOCOMPLETE + OUT_JSON)
       sb.append("&input=" + URLEncoder.encode(input, "utf8"))
       val url = URL(sb.toString())
       conn = url.openConnection() as HttpURLConnection
@@ -48,14 +50,52 @@ class PlaceAPI {
     return parseAutoCompleteData(jsonResults)
   }
 
+  /**
+   * Fetches the details of the place
+   */
+  @Nullable
+  fun fetchPlaceDetails(placeId: String, listener: OnPlacesDetailsListener) {
+    checkInitialization()
+    Thread(Runnable {
+      var conn: HttpURLConnection? = null
+      val jsonResults = StringBuilder()
+      try {
+        val sb = buildApiUrl(PLACES_API_BASE + TYPE_DETAIL + OUT_JSON)
+        sb.append("$PARAM_PLACE_ID$placeId")
+        val url = URL(sb.toString())
+        conn = url.openConnection() as HttpURLConnection
+        val inputStreamReader = InputStreamReader(conn.inputStream)
+        constructData(inputStreamReader, jsonResults)
+        parseDetailsData(jsonResults, listener)
+      } catch (e: Exception) {
+        when (e) {
+          is JSONException -> parseDetailsError(jsonResults, listener, e)
+          is MalformedURLException -> showDetailsError(R.string.error_processing_places_api, listener, e)
+          is IOException -> showDetailsError(R.string.error_connecting_to_places_api, listener, e)
+        }
+      } finally {
+        conn?.disconnect()
+      }
+    }).start()
+  }
+
   private fun checkInitialization() {
     if (TextUtils.isEmpty(apiKey)) {
-      throw RuntimeException(appContext?.getString(R.string.error_lib_not_initialized))
+      throw InitializationException(appContext.getString(R.string.error_lib_not_initialized))
     }
   }
 
+  private fun buildApiUrl(apiUrl: String): StringBuilder {
+    val sb = StringBuilder(apiUrl)
+    sb.append("?key=$apiKey")
+    if (!TextUtils.isEmpty(sessionToken)) {
+      sb.append("&sessiontoken=$sessionToken")
+    }
+    return sb
+  }
+
   private fun logError(e: Exception, resource: Int) {
-    Log.e(TAG, appContext?.getString(resource), e)
+    Log.e(TAG, appContext.getString(resource), e)
   }
 
   private fun parseAutoCompleteData(jsonResults: StringBuilder): ArrayList<Place>? {
@@ -75,19 +115,15 @@ class PlaceAPI {
       return resultList
     } catch (e: JSONException) {
       val errorJson = JSONObject(jsonResults.toString())
-      if (errorJson.has("error_message")) {
-        Log.e(TAG, errorJson.getString("error_message"))
-      } else {
-        Log.e(TAG, appContext?.getString(R.string.error_cannot_process_json_results), e)
+      when {
+        errorJson.has(ERROR_MESSAGE) -> Log.e(TAG, errorJson.getString(ERROR_MESSAGE))
+        else -> Log.e(TAG, appContext.getString(R.string.error_cannot_process_json_results), e)
       }
       return resultList
     }
   }
 
-  private fun constructData(
-    inputStreamReader: InputStreamReader,
-    jsonResults: StringBuilder
-  ) {
+  private fun constructData(inputStreamReader: InputStreamReader, jsonResults: StringBuilder) {
     var read: Int
     val buff = CharArray(1024)
     loop@ do {
@@ -99,67 +135,19 @@ class PlaceAPI {
     } while (true)
   }
 
-  fun initialize(key: String, context: Context) {
-    apiKey = key
-    appContext = context
-  }
-
-  /**
-   * Fetches the details of the place
-   */
-  @Nullable
-  fun fetchPlaceDetails(placeId: String, listener: OnPlacesDetailsListener) {
-    checkInitialization()
-    Thread(Runnable {
-      var conn: HttpURLConnection? = null
-      val jsonResults = StringBuilder()
-      try {
-        val sb = StringBuilder(PLACES_API_BASE + TYPE_DETAIL + OUT_JSON)
-        sb.append("?key=$apiKey")
-        sb.append("$PARAM_PLACE_ID$placeId")
-        val url = URL(sb.toString())
-        conn = url.openConnection() as HttpURLConnection
-        val inputStreamReader = InputStreamReader(conn.inputStream)
-        constructData(inputStreamReader, jsonResults)
-        parseDetailsData(jsonResults, listener)
-      } catch (e: Exception) {
-        when (e) {
-          is JSONException -> parseDetailsError(jsonResults, listener, e)
-          is MalformedURLException -> showDetailsError(
-            R.string.error_processing_places_api,
-            listener,
-            e
-          )
-          is IOException -> showDetailsError(R.string.error_connecting_to_places_api, listener, e)
-        }
-      } finally {
-        conn?.disconnect()
-      }
-    }).start()
-  }
-
-  private fun showDetailsError(
-    resource: Int,
-    listener: OnPlacesDetailsListener,
-    e: Exception
-  ) {
+  private fun showDetailsError(resource: Int, listener: OnPlacesDetailsListener, e: Exception) {
     logError(e, resource)
-    appContext?.getString(resource)?.let { listener.onError(it) }
+    appContext.getString(resource).let { listener.onError(it) }
   }
 
-  private fun parseDetailsError(
-    jsonResults: StringBuilder,
-    listener: OnPlacesDetailsListener,
-    e: JSONException
-  ) {
+  private fun parseDetailsError(jsonResults: StringBuilder, listener: OnPlacesDetailsListener, e: Exception) {
     val errorJson = JSONObject(jsonResults.toString())
     if (errorJson.has(ERROR_MESSAGE)) {
       Log.e(TAG, errorJson.getString(ERROR_MESSAGE), e)
       listener.onError(errorJson.getString(ERROR_MESSAGE))
     } else {
-      Log.e(TAG, appContext?.getString(R.string.error_cannot_process_json_results), e)
-      appContext?.getString(R.string.error_cannot_process_json_results)
-        ?.let { listener.onError(it) }
+      Log.e(TAG, appContext.getString(R.string.error_cannot_process_json_results), e)
+      appContext.getString(R.string.error_cannot_process_json_results).let { listener.onError(it) }
     }
   }
 
@@ -183,15 +171,8 @@ class PlaceAPI {
     )
   }
 
-  private fun parseAddressType(
-    addressTypeArray: JSONArray,
-    addressType: ArrayList<String>,
-    address: ArrayList<Address>,
-    addressObject: JSONObject
-  ) {
-    (0 until addressTypeArray.length()).forEach { j ->
-      addressType.add(addressTypeArray.getString(j))
-    }
+  private fun parseAddressType(addressTypeArray: JSONArray, addressType: ArrayList<String>, address: ArrayList<Address>, addressObject: JSONObject) {
+    (0 until addressTypeArray.length()).forEach { j -> addressType.add(addressTypeArray.getString(j)) }
     address.add(
       Address(
         addressObject.getString(LONG_NAME),
@@ -216,7 +197,28 @@ class PlaceAPI {
     private const val ADDRESS_COMPONENTS = "address_components"
     private const val RESULT = "result"
     private const val ERROR_MESSAGE = "error_message"
-    private var apiKey = ""
-    private var appContext: Context? = null
+  }
+
+  /**
+   * The data class used as builder to allow the user to use different configs of the places API
+   */
+  data class Builder(
+    private var apiKey: String? = null,
+    private var sessionToken: String? = null
+  ) {
+    /**
+     * Sets the api key for the PlaceAPI
+     */
+    fun apiKey(apiKey: String) = apply { this.apiKey = apiKey }
+
+    /**
+     * Sets a unique session token for billing in the PlaceAPI
+     */
+    fun sessionToken(sessionToken: String) = apply { this.sessionToken = sessionToken }
+
+    /**
+     * Builds and creates an object of the PlaceAPI
+     */
+    fun build(context: Context) = PlaceAPI(apiKey, sessionToken, context)
   }
 }
