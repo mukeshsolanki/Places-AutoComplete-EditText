@@ -32,11 +32,7 @@ class PlaceAPI private constructor(var apiKey: String?, var sessionToken: String
     var conn: HttpURLConnection? = null
     val jsonResults = StringBuilder()
     try {
-      val sb = StringBuilder(PLACES_API_BASE + TYPE_AUTOCOMPLETE + OUT_JSON)
-      sb.append("?key=$apiKey")
-      if (!TextUtils.isEmpty(sessionToken)) {
-        sb.append("&sessiontoken=$sessionToken")
-      }
+      val sb = buildApiUrl(PLACES_API_BASE + TYPE_AUTOCOMPLETE + OUT_JSON)
       sb.append("&input=" + URLEncoder.encode(input, "utf8"))
       val url = URL(sb.toString())
       conn = url.openConnection() as HttpURLConnection
@@ -64,11 +60,7 @@ class PlaceAPI private constructor(var apiKey: String?, var sessionToken: String
       var conn: HttpURLConnection? = null
       val jsonResults = StringBuilder()
       try {
-        val sb = StringBuilder(PLACES_API_BASE + TYPE_DETAIL + OUT_JSON)
-        sb.append("?key=$apiKey")
-        if (!TextUtils.isEmpty(sessionToken)) {
-          sb.append("&sessiontoken=$sessionToken")
-        }
+        val sb = buildApiUrl(PLACES_API_BASE + TYPE_DETAIL + OUT_JSON)
         sb.append("$PARAM_PLACE_ID$placeId")
         val url = URL(sb.toString())
         conn = url.openConnection() as HttpURLConnection
@@ -91,6 +83,15 @@ class PlaceAPI private constructor(var apiKey: String?, var sessionToken: String
     if (TextUtils.isEmpty(apiKey)) {
       throw InitializationException(appContext.getString(R.string.error_lib_not_initialized))
     }
+  }
+
+  private fun buildApiUrl(apiUrl: String): StringBuilder {
+    val sb = StringBuilder(apiUrl)
+    sb.append("?key=$apiKey")
+    if (!TextUtils.isEmpty(sessionToken)) {
+      sb.append("&sessiontoken=$sessionToken")
+    }
+    return sb
   }
 
   private fun logError(e: Exception, resource: Int) {
