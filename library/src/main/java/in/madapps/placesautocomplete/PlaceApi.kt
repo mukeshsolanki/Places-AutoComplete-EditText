@@ -1,5 +1,6 @@
 package `in`.madapps.placesautocomplete
 
+import `in`.madapps.placesautocomplete.exception.InitializationException
 import `in`.madapps.placesautocomplete.listener.OnPlacesDetailsListener
 import `in`.madapps.placesautocomplete.model.Address
 import `in`.madapps.placesautocomplete.model.Place
@@ -50,7 +51,7 @@ class PlaceAPI {
 
   private fun checkInitialization() {
     if (TextUtils.isEmpty(apiKey)) {
-      throw RuntimeException(appContext?.getString(R.string.error_lib_not_initialized))
+      throw InitializationException(appContext?.getString(R.string.error_lib_not_initialized))
     }
   }
 
