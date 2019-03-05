@@ -17,7 +17,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 class MainActivity : AppCompatActivity() {
 
   val placesApi = PlaceAPI.Builder()
-    .apiKey("YOUR_API_KEY")
+    .apiKey("AIzaSyD4Mjw6SP6N4idJ39UavBbGk9IFN1POx1c")
     .build(this@MainActivity)
 
   override fun onCreate(savedInstanceState: Bundle?) {
