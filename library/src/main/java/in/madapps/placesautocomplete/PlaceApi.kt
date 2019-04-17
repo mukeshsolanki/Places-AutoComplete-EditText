@@ -168,9 +168,13 @@ class PlaceAPI private constructor(
     val url = resultJsonObject.getString(URL)
     val utcOffset = resultJsonObject.getInt(UTC_OFFSET)
     val vicinity = resultJsonObject.getString(VICINITY)
-    val plusCode = resultJsonObject.getJSONObject(PLUS_CODE)
-    val compoundPlusCode = plusCode.getString(COMPOUND_CODE)
-    val globalPlusCode = plusCode.getString(GLOBAL_CODE)
+    var compoundPlusCode = ""
+    var globalPlusCode = ""
+    if (resultJsonObject.has(PLUS_CODE)){
+      val plusCode = resultJsonObject.optJSONObject(PLUS_CODE)
+      compoundPlusCode = plusCode.optString(COMPOUND_CODE)
+      globalPlusCode = plusCode.getString(GLOBAL_CODE)
+    }
     val address = ArrayList<Address>()
     getAddress(addressArray, address)
     listener.onPlaceDetailsFetched(
